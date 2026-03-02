@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gordelio's Food · Factura Semanal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0b1120;--surface:#111927;--surface2:#182236;--border:rgba(201,168,76,.18);--gold:#c9a84c;--gold2:#e0bb5a;--muted:rgba(255,255,255,.35);--dim:rgba(255,255,255,.07);--red:#e74c3c;--green:#2ecc71;}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-height:100vh;}
+header{background:var(--surface);border-bottom:1.5px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.logo-badge{background:#0f1729;border:2px solid var(--gold);border-radius:8px;padding:5px 12px 7px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.logo-script{font-size:20px;color:var(--gold);font-weight:900;font-style:italic;line-height:1.1;}
+.logo-food{font-size:6px;letter-spacing:3px;color:var(--gold);font-weight:700;text-transform:uppercase;margin-top:1px;opacity:.8;}
+.hdr-info h1{font-size:14px;font-weight:700;}
+.hdr-info p{font-size:9px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a2940;border:1px solid var(--gold);color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:9999;transition:transform .3s ease;pointer-events:none;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.success{border-color:var(--green);color:var(--green);}
+#toast.error{border-color:var(--red);color:var(--red);}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:7px;font-weight:600;transition:all .15s;}
+.btn-primary{background:var(--gold);color:#0b1120;padding:9px 16px;font-size:13px;}
+.btn-primary:hover{background:var(--gold2);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.12);padding:9px 14px;font-size:12px;}
+.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.25);}
+.btn-outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold);padding:9px 16px;font-size:13px;}
+.btn-outline:hover{background:rgba(201,168,76,.1);}
+.btn-wa{background:#25D366;color:#fff;padding:9px 16px;font-size:13px;}
+.btn-wa:hover{background:#20bb5a;}
+.btn-wapdf{background:#128C7E;color:#fff;padding:9px 16px;font-size:13px;}
+.btn-wapdf:hover{background:#0f7469;}
+.page{max-width:860px;margin:0 auto;padding:20px 16px 40px;}
+.section-label{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.section-label::before{content:'';display:block;width:3px;height:10px;background:var(--gold);border-radius:2px;}
+.row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.fd{display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px;}
+.fd label{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.fd input,.fd textarea{background:var(--dim);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:9px 12px;color:#fff;font-family:inherit;font-size:13px;outline:none;transition:border-color .15s;width:100%;}
+.fd input:focus,.fd textarea:focus{border-color:var(--gold);}
+.fd input[readonly]{color:var(--gold);background:rgba(201,168,76,.06);border-color:rgba(201,168,76,.18);cursor:default;font-size:12px;font-variant-numeric:tabular-nums;}
+.fd input::placeholder,.fd textarea::placeholder{color:rgba(255,255,255,.15);}
+input[type="date"]{color-scheme:dark;}
+.day-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;}
+.day-block:hover{border-color:rgba(201,168,76,.3);}
+.day-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,168,76,.07);border-bottom:1px solid var(--border);}
+.day-num{background:var(--gold);color:#0b1120;font-weight:900;font-size:13px;border-radius:5px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.day-name{font-weight:700;font-size:13px;min-width:75px;}
+.day-date-input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#fff;font-family:inherit;font-size:12px;padding:5px 9px;outline:none;color-scheme:dark;}
+.day-date-input:focus{border-color:var(--gold);}
+.day-subtotal{margin-left:auto;font-weight:700;color:var(--gold);font-size:14px;font-variant-numeric:tabular-nums;}
+.btn-del-day{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25);color:var(--red);font-size:11px;padding:4px 9px;border-radius:5px;}
+.btn-del-day:hover{background:rgba(231,76,60,.22);}
+.day-body{padding:12px 14px 10px;}
+.items-header{display:grid;grid-template-columns:1fr 110px 65px 30px;gap:6px;margin-bottom:5px;}
+.items-header span{font-size:7px;text-transform:uppercase;color:rgba(255,255,255,.2);font-weight:700;}
+.item-row{display:grid;grid-template-columns:1fr 110px 65px 30px;gap:6px;margin-bottom:5px;align-items:center;}
+.item-row input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:6px;padding:7px 9px;color:#fff;font-family:inherit;font-size:13px;outline:none;width:100%;transition:border-color .15s;}
+.item-row input:focus{border-color:var(--gold);}
+.item-row input::placeholder{color:rgba(255,255,255,.13);}
+.inp-price{text-align:right;font-variant-numeric:tabular-nums;}
+.inp-qty{text-align:center;}
+.btn-del-item{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.18);color:var(--red);font-size:14px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:5px;padding:0;flex-shrink:0;}
+.btn-del-item:hover{background:rgba(231,76,60,.22);}
+.btn-add-item{width:100%;background:rgba(201,168,76,.05);border:1px dashed rgba(201,168,76,.22);color:var(--gold);padding:7px;font-size:12px;border-radius:6px;margin-top:4px;}
+.btn-add-item:hover{background:rgba(201,168,76,.1);border-style:solid;}
+.btn-add-day{width:100%;background:rgba(201,168,76,.06);border:2px dashed rgba(201,168,76,.22);color:var(--gold);padding:14px;font-size:14px;font-weight:700;border-radius:10px;margin-bottom:16px;}
+.btn-add-day:hover{background:rgba(201,168,76,.12);}
+.grand-total-box{background:var(--surface2);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.grand-total-box .lbl{font-size:13px;font-weight:600;color:var(--muted);}
+.grand-total-box .val{font-size:28px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;}
+.actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+.actions-grid button{padding:13px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:7px;}
+.note-hint{font-size:9px;color:rgba(255,255,255,.2);text-align:center;margin-top:5px;}
+.overlay{position:fixed;inset:0;background:rgba(5,8,20,.95);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;backdrop-filter:blur(8px);}
+.overlay-bar{display:flex;gap:10px;align-items:center;}
+@media(max-width:480px){
+  .item-row,.items-header{grid-template-columns:1fr 90px 55px 28px;}
+  .actions-grid{grid-template-columns:1fr;}
+  .day-head{flex-wrap:wrap;gap:6px;}
+  .day-subtotal{margin-left:0;}
+}
+</style>
+</head>
+<body>
+<div id="toast">✓ Guardado</div>
+<header>
+  <div class="logo-badge">
+    <span class="logo-script">Gordelio's</span>
+    <span class="logo-food">Food</span>
+  </div>
+  <div class="hdr-info"><h1>Gordelio's Food</h1><p>Factura Semanal</p></div>
+  <div class="hdr-r"><button class="btn-ghost" id="btn-reset">↺ Nueva</button></div>
+</header>
+<div class="page">
+  <div class="section-label">Datos de la Factura</div>
+  <div class="row">
+    <div class="fd"><label>Factura #</label><input id="fn" readonly></div>
+    <div class="fd"><label>Fecha emisión</label><input type="date" id="fd"></div>
+    <div class="fd"><label>Vencimiento</label><input type="date" id="fdu"></div>
+    <div class="fd"><label>Referencia</label><input id="fr" readonly></div>
+  </div>
+  <div class="section-label">Datos del Cliente</div>
+  <div class="row">
+    <div class="fd"><label>Nombre</label><input id="fnm" placeholder="Ej: Gaby Perez"></div>
+    <div class="fd"><label>WhatsApp</label><input id="fph" placeholder="3006889632" inputmode="numeric"></div>
+    <div class="fd"><label>Correo</label><input id="fem" type="email" placeholder="cliente@email.com"></div>
+  </div>
+  <div class="row">
+    <div class="fd"><label>Dirección</label><input id="fa1" placeholder="Calle, conjunto..."></div>
+    <div class="fd"><label>Barrio</label><input id="fa2" placeholder="La Playa"></div>
+  </div>
+  <div class="section-label">Días y Artículos</div>
+  <div id="days-list"></div>
+  <button class="btn-add-day" id="btn-add-day">📅 + Agregar día</button>
+  <div class="grand-total-box">
+    <div class="lbl">💰 Total General de la Semana</div>
+    <div class="val" id="grand-total">COL$0</div>
+  </div>
+  <div class="row" style="margin-bottom:16px">
+    <div class="fd"><label>Nota adicional (opcional)</label><input id="fnt" placeholder="Observaciones, método de pago..."></div>
+  </div>
+  <div class="actions-grid">
+    <button class="btn-outline" id="btn-prev">👁 Vista Previa PDF</button>
+    <button class="btn-primary" id="btn-dl">⬇ Descargar PDF</button>
+    <button class="btn-wa" id="btn-wa">💬 Enviar por WhatsApp</button>
+    <button class="btn-wapdf" id="btn-wapdf">📎 PDF + WhatsApp</button>
+  </div>
+  <p class="note-hint">WhatsApp → resumen en texto · PDF + WA → descarga PDF y abre WhatsApp</p>
+</div>
+<script>
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const $=id=>document.getElementById(id);
+const val=id=>$(id)?$(id).value:'';
+const iso=d=>d.toISOString().split('T')[0];
+const pad=n=>String(n).padStart(4,'0');
+const fmt=n=>'COL$'+Number(n||0).toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtDate=str=>{if(!str)return'—';try{const[y,m,d]=str.split('-');return parseInt(d)+' '+MESES[parseInt(m)-1]+' '+y;}catch(e){return str;}};
+const dayName=str=>{if(!str)return'';try{const[y,m,d]=str.split('-').map(Number);return DIAS[new Date(y,m-1,d).getDay()];}catch(e){return'';}};
+const genRef=()=>'LG-'+Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+let toastTimer;
+function showToast(msg,type='success'){const t=$('toast');t.textContent=msg;t.className='show '+type;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.className='';},2200);}
+let invNum=100,days=[];
+try{const s=localStorage.getItem('lg-num');invNum=s?parseInt(s)+1:Math.floor(Math.random()*900)+100;}catch(e){}
+const calcDay=d=>d.items.reduce((s,it)=>{const p=parseFloat(it.priceEl.value)||0,q=Math.max(1,parseInt(it.qtyEl.value)||1);return s+p*q;},0);
+const updateGrand=()=>{$('grand-total').textContent=fmt(days.reduce((s,d)=>s+calcDay(d),0));};
+let saveTimer;
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(doSave,600);}
+function doSave(){try{const data={num:val('fn'),ref:val('fr'),date:val('fd'),due:val('fdu'),name:val('fnm'),phone:val('fph'),email:val('fem'),a1:val('fa1'),a2:val('fa2'),note:val('fnt'),days:days.map(d=>({date:d.dateEl.value,items:d.items.map(it=>({desc:it.descEl.value,price:it.priceEl.value,qty:it.qtyEl.value}))}))};localStorage.setItem('lg-draft',JSON.stringify(data));localStorage.setItem('lg-num',String(invNum));showToast('✓ Borrador guardado');}catch(e){showToast('⚠ No se pudo guardar','error');}}
+function addItem(dayObj,desc='',price='',qty='1'){const row=document.createElement('div');row.className='item-row';const dE=document.createElement('input');dE.placeholder='Ej: Hamburguesa';dE.value=desc;const pE=document.createElement('input');pE.type='number';pE.min='0';pE.step='100';pE.placeholder='25000';pE.value=price;pE.className='inp-price';pE.inputMode='numeric';const qE=document.createElement('input');qE.type='number';qE.min='1';qE.max='999';qE.placeholder='1';qE.value=qty;qE.className='inp-qty';qE.inputMode='numeric';const db=document.createElement('button');db.className='btn-del-item';db.textContent='✕';row.appendChild(dE);row.appendChild(pE);row.appendChild(qE);row.appendChild(db);const it={descEl:dE,priceEl:pE,qtyEl:qE,row};[dE,pE,qE].forEach(inp=>inp.addEventListener('input',()=>{if(inp===qE&&(parseInt(qE.value)<1||isNaN(parseInt(qE.value))))qE.value='1';dayObj.subtotalEl.textContent=fmt(calcDay(dayObj));updateGrand();scheduleSave();}));db.addEventListener('click',()=>{const idx=dayObj.items.indexOf(it);if(idx>-1)dayObj.items.splice(idx,1);row.remove();dayObj.subtotalEl.textContent=fmt(calcDay(dayObj));updateGrand();scheduleSave();});dayObj.items.push(it);dayObj.rowsEl.appendChild(row);}
+function addDay(dateVal='',itemsData=null){if(!dateVal){if(days.length){const last=days[days.length-1].dateEl.value;if(last){const[y,m,d]=last.split('-').map(Number);dateVal=iso(new Date(y,m-1,d+1));}}if(!dateVal)dateVal=iso(new Date());}const block=document.createElement('div');block.className='day-block';const head=document.createElement('div');head.className='day-head';const nE=document.createElement('div');nE.className='day-num';nE.textContent=days.length+1;const nmE=document.createElement('div');nmE.className='day-name';nmE.textContent=dayName(dateVal)||'Día';const dtE=document.createElement('input');dtE.type='date';dtE.className='day-date-input';dtE.value=dateVal;const stE=document.createElement('div');stE.className='day-subtotal';stE.textContent='COL$0';const dlB=document.createElement('button');dlB.className='btn-del-day';dlB.textContent='✕ Quitar';head.appendChild(nE);head.appendChild(nmE);head.appendChild(dtE);head.appendChild(stE);head.appendChild(dlB);const body=document.createElement('div');body.className='day-body';const hdr=document.createElement('div');hdr.className='items-header';hdr.innerHTML='<span>Descripción</span><span style="text-align:right">Precio unit.</span><span style="text-align:center">Cant.</span><span></span>';const rE=document.createElement('div');rE.className='rows-container';const aB=document.createElement('button');aB.className='btn-add-item';aB.textContent='+ Agregar artículo';body.appendChild(hdr);body.appendChild(rE);body.appendChild(aB);block.appendChild(head);block.appendChild(body);const dayObj={block,dateEl:dtE,nameEl:nmE,numEl:nE,subtotalEl:stE,rowsEl:rE,items:[]};dtE.addEventListener('change',()=>{nmE.textContent=dayName(dtE.value)||'Día';scheduleSave();});aB.addEventListener('click',()=>{addItem(dayObj);scheduleSave();});dlB.addEventListener('click',()=>{if(!confirm('¿Eliminar este día?'))return;const idx=days.indexOf(dayObj);if(idx>-1)days.splice(idx,1);block.remove();days.forEach((d,i)=>{d.numEl.textContent=i+1;});updateGrand();scheduleSave();});if(itemsData&&itemsData.length)itemsData.forEach(it=>addItem(dayObj,it.desc||'',it.price||'',it.qty||'1'));else{addItem(dayObj);addItem(dayObj);}days.push(dayObj);$('days-list').appendChild(block);stE.textContent=fmt(calcDay(dayObj));updateGrand();}
+function validate(){if(!val('fnm').trim()){showToast('⚠ Ingresa el nombre del cliente','error');return false;}if(!days.length){showToast('⚠ Agrega al menos un día','error');return false;}if(!days.some(d=>d.items.some(it=>it.descEl.value.trim()&&parseFloat(it.priceEl.value)>0))){showToast('⚠ Agrega al menos un artículo con precio','error');return false;}return true;}
+function buildWAMsg(){let msg="🍔 *GORDELIO'S FOOD*\n━━━━━━━━━━━━━━━━━━\n";msg+="📄 Factura *#"+val('fn')+"* | Ref: "+val('fr')+"\n";msg+="📅 Emitida: "+fmtDate(val('fd'))+" | Vence: "+fmtDate(val('fdu'))+"\n\n";msg+="👤 *"+(val('fnm')||'Cliente')+"*\n";const addr=[val('fa1'),val('fa2')].filter(Boolean).join(', ');if(addr)msg+="📍 "+addr+"\n";if(val('fem'))msg+="📧 "+val('fem')+"\n";msg+="\n";let grand=0;days.forEach((d,i)=>{const dt=calcDay(d);grand+=dt;const dn=dayName(d.dateEl.value),df=fmtDate(d.dateEl.value);msg+="📆 *Día "+(i+1)+(dn?' — '+dn:'')+(df!=='—'?', '+df:'')+"*\n";d.items.filter(it=>it.descEl.value.trim()).forEach(it=>{const p=parseFloat(it.priceEl.value)||0,q=Math.max(1,parseInt(it.qtyEl.value)||1);msg+="  • "+it.descEl.value+(q>1?' x'+q:'')+' → '+fmt(p*q)+"\n";});msg+="  💵 Subtotal: *"+fmt(dt)+"*\n\n";});msg+="━━━━━━━━━━━━━━━━━━\n💰 *TOTAL SEMANA: "+fmt(grand)+"*\n";if(val('fnt').trim())msg+="\n📝 _"+val('fnt')+"_";msg+="\n\n¡Gracias por elegirnos! 🙌";return msg;}
+function sendWA(){if(!validate())return;const phone=val('fph').replace(/\D/g,'');window.open('https://wa.me/'+(phone?'57'+phone:'')+'?text='+encodeURIComponent(buildWAMsg()),'_blank');}
+function loadJsPDF(){return new Promise((res,rej)=>{if(window.jspdf){res();return;}const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=res;s.onerror=()=>rej(new Error('No se pudo cargar jsPDF'));document.head.appendChild(s);});}
+function buildPDF(){const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4'});const PW=210,M=14,CW=182;let y=0;const C={nv:[15,23,41],nv2:[26,37,64],gd:[201,168,76],wh:[255,255,255],mt:[130,130,145],tx:[26,26,46],bd:[220,210,198],cr:[253,248,240],cr2:[245,237,224]};const fc=c=>doc.setFillColor(...c),tc=c=>doc.setTextColor(...c),dc=c=>doc.setDrawColor(...c);fc(C.nv);doc.rect(0,0,PW,36,'F');dc(C.gd);doc.setLineWidth(0.5);doc.roundedRect(M,7,36,22,2,2,'S');tc(C.gd);doc.setFont('helvetica','bolditalic');doc.setFontSize(11);doc.text("Gordelio's",M+18,16,{align:'center'});tc([180,160,100]);doc.setFont('helvetica','normal');doc.setFontSize(5);doc.text('F O O D',M+18,22,{align:'center'});tc(C.wh);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text('FACTURA',PW-M,20,{align:'right'});tc(C.gd);doc.setFontSize(7);doc.text('RESUMEN SEMANAL',PW-M,27,{align:'right'});fc(C.gd);doc.rect(PW-M-52,29,52,1.2,'F');y=36;fc(C.nv2);doc.rect(0,y,PW,13,'F');[[val('fn'),'FACTURA #'],[fmtDate(val('fd')),'FECHA'],[fmtDate(val('fdu')),'VENCIMIENTO'],[val('fr'),'REFERENCIA']].forEach(([v,lbl],i)=>{const x=M+i*(CW/4);tc(C.gd);doc.setFont('helvetica','bold');doc.setFontSize(5);doc.text(lbl,x,y+5);tc(C.wh);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text(String(v||'—'),x,y+10.5);});y+=20;tc(C.mt);doc.setFont('helvetica','bold');doc.setFontSize(6);doc.text('DE:',M,y);y+=4;tc(C.tx);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text("Gordelio's Food",M,y);y+=5;tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(7.5);['Cra. 10 #9-05, Barrio La Playa','Barranquilla, Colombia','Tel: 300 504 2360'].forEach(l=>{doc.text(l,M,y);y+=4;});let ty=y-17,tx2=M+CW/2;tc(C.mt);doc.setFont('helvetica','bold');doc.setFontSize(6);doc.text('PARA:',tx2,ty);ty+=4;tc(C.tx);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(val('fnm')||'—',tx2,ty);ty+=5;tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(7.5);[val('fa1'),val('fa2')?'Barrio '+val('fa2'):'',val('fph')?'Tel: '+val('fph'):'',val('fem')].filter(Boolean).forEach(l=>{doc.text(l,tx2,ty);ty+=4;});y=Math.max(y,ty)+5;dc(C.bd);doc.setLineWidth(0.3);doc.line(M,y,PW-M,y);y+=7;tc(C.tx);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text('DETALLE POR DÍA',M,y);y+=7;let grand=0;days.forEach((d,di)=>{const items=d.items.filter(it=>it.descEl.value.trim()),dt=calcDay(d);grand+=dt;const lbl=[dayName(d.dateEl.value),fmtDate(d.dateEl.value)].filter(Boolean).join(', '),rowH=7;if(y+9+7+(items.length||1)*rowH+16>272){doc.addPage();y=14;}fc(C.nv);doc.rect(M,y,CW,9,'F');fc(C.gd);doc.circle(M+5,y+4.5,3,'F');tc(C.nv);doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.text(String(di+1),M+5,y+6.2,{align:'center'});tc(C.wh);doc.setFontSize(8.5);doc.text(lbl||'Día '+(di+1),M+11,y+6);tc(C.gd);doc.text(fmt(dt),PW-M,y+6,{align:'right'});y+=9;fc(C.cr2);doc.rect(M,y,CW,7,'F');tc(C.mt);doc.setFont('helvetica','bold');doc.setFontSize(6);doc.text('DESCRIPCIÓN',M+2,y+5);doc.text('PRECIO',M+CW*0.67,y+5,{align:'right'});doc.text('CANT.',M+CW*0.80,y+5,{align:'right'});doc.text('SUBTOTAL',PW-M,y+5,{align:'right'});y+=7;if(!items.length){tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('Sin artículos',M+CW/2,y+5,{align:'center'});y+=rowH;}else{items.forEach((it,ri)=>{const p=parseFloat(it.priceEl.value)||0,q=Math.max(1,parseInt(it.qtyEl.value)||1);if(ri%2===1){fc(C.cr);doc.rect(M,y,CW,rowH,'F');}tc(C.tx);doc.setFont('helvetica','normal');doc.setFontSize(8);const lines=doc.splitTextToSize(it.descEl.value,CW*0.6);doc.text((lines[0]||'')+(lines.length>1?'…':''),M+2,y+5);doc.text(fmt(p),M+CW*0.67,y+5,{align:'right'});doc.text(String(q),M+CW*0.80,y+5,{align:'right'});doc.setFont('helvetica','bold');doc.text(fmt(p*q),PW-M,y+5,{align:'right'});dc(C.bd);doc.setLineWidth(0.1);doc.line(M,y+rowH,PW-M,y+rowH);y+=rowH;});}fc(C.cr2);doc.rect(M,y,CW,8,'F');tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.text('Subtotal del día:',PW-M-42,y+5.5);tc(C.gd);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(fmt(dt),PW-M,y+5.5,{align:'right'});y+=16;});if(y+26>272){doc.addPage();y=14;}dc(C.bd);doc.setLineWidth(0.3);doc.line(PW-M-76,y,PW-M,y);y+=5;tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('IVA (0%)',PW-M-72,y+4);doc.text('COL$0',PW-M,y+4,{align:'right'});dc(C.bd);doc.line(PW-M-76,y+7,PW-M,y+7);y+=12;fc(C.nv);doc.roundedRect(PW-M-78,y,80,14,2,2,'F');tc(C.wh);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('TOTAL SEMANA',PW-M-75,y+9.5);tc(C.gd);doc.setFontSize(12);doc.text(fmt(grand),PW-M-1,y+9.5,{align:'right'});y+=20;const note=val('fnt').trim();if(note&&y+16<272){fc(C.cr);doc.rect(M,y,CW,12,'F');dc(C.gd);doc.setLineWidth(1);doc.line(M,y,M,y+12);doc.setLineWidth(0.3);tc(C.mt);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.splitTextToSize(note,CW-10).slice(0,2).forEach((l,i)=>doc.text(l,M+5,y+4.5+i*5));y+=16;}fc(C.cr2);doc.rect(0,285,PW,12,'F');fc(C.gd);doc.rect(0,284.5,PW,1,'F');tc(C.tx);doc.setFont('helvetica','bold');doc.setFontSize(7);doc.text("Gordelio's Food",M,291);tc(C.mt);doc.setFont('helvetica','normal');doc.text('  ·  Cra. 10 #9-05, La Playa  ·  Barranquilla, Colombia  ·  300 504 2360',M+28,291);tc(C.tx);doc.setFont('helvetica','bold');doc.text('Factura '+val('fn'),PW-M,291,{align:'right'});return doc;}
+async function downloadPDF(){if(!validate())return;try{showToast('⏳ Generando PDF...');await loadJsPDF();const doc=buildPDF(),safe=(val('fnm')||'cliente').replace(/\s+/g,'-').toLowerCase().replace(/[^a-z0-9-]/g,'');doc.save('factura-'+val('fn')+'-'+safe+'.pdf');showToast('✓ PDF descargado');}catch(e){console.error(e);showToast('✗ Error: '+e.message,'error');}}
+async function openPreview(){if(!validate())return;try{showToast('⏳ Cargando vista previa...');await loadJsPDF();const doc=buildPDF(),uri=doc.output('datauristring');const ov=document.createElement('div');ov.className='overlay';ov.innerHTML='<div class="overlay-bar"><button id="pv-dl" style="background:#c9a84c;color:#0b1120;border:none;border-radius:7px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;">⬇ Descargar PDF</button><button id="pv-cl" style="background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.35);border-radius:7px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;">✕ Cerrar</button></div><iframe src="'+uri+'" style="width:min(840px,100%);height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff;"></iframe>';document.body.appendChild(ov);ov.querySelector('#pv-dl').onclick=downloadPDF;ov.querySelector('#pv-cl').onclick=()=>ov.remove();ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});showToast('✓ Vista previa lista');}catch(e){console.error(e);showToast('✗ Error: '+e.message,'error');}}
+function resetForm(){days=[];$('days-list').innerHTML='';$('grand-total').textContent='COL$0';try{invNum=parseInt(localStorage.getItem('lg-num')||'99')+1;}catch(e){}$('fn').value=pad(invNum);$('fr').value=genRef();const t=new Date(),due=new Date(t);due.setDate(due.getDate()+7);$('fd').value=iso(t);$('fdu').value=iso(due);['fnm','fph','fem','fa1','fa2','fnt'].forEach(id=>$(id).value='');addDay();}
+function init(){$('fn').value=pad(invNum);$('fr').value=genRef();const t=new Date(),due=new Date(t);due.setDate(due.getDate()+7);$('fd').value=iso(t);$('fdu').value=iso(due);let saved=null;try{saved=JSON.parse(localStorage.getItem('lg-draft'));}catch(e){}if(saved&&saved.days&&saved.days.length){if(saved.num)$('fn').value=saved.num;if(saved.ref)$('fr').value=saved.ref;if(saved.date)$('fd').value=saved.date;if(saved.due)$('fdu').value=saved.due;if(saved.name)$('fnm').value=saved.name;if(saved.phone)$('fph').value=saved.phone;if(saved.email)$('fem').value=saved.email;if(saved.a1)$('fa1').value=saved.a1;if(saved.a2)$('fa2').value=saved.a2;if(saved.note)$('fnt').value=saved.note;saved.days.forEach(d=>addDay(d.date||'',d.items||[]));}else{addDay();}['fnm','fph','fem','fa1','fa2','fd','fdu','fnt'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',scheduleSave);});$('btn-reset').addEventListener('click',()=>{if(!confirm('¿Crear nueva factura? Se perderá el borrador.'))return;try{localStorage.removeItem('lg-draft');}catch(e){}resetForm();showToast('✓ Nueva factura creada');});$('btn-add-day').addEventListener('click',()=>{addDay();scheduleSave();});$('btn-prev').addEventListener('click',openPreview);$('btn-dl').addEventListener('click',downloadPDF);$('btn-wa').addEventListener('click',sendWA);$('btn-wapdf').addEventListener('click',async()=>{await downloadPDF();setTimeout(sendWA,900);});}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
