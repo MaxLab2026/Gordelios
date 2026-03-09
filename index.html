@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gordelio's Food · Factura Semanal</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1120">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gordelio's">
+<link rel="apple-touch-icon" href="icon-512.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#0b1120;--surface:#111927;--surface2:#182236;--border:rgba(201,168,76,.18);--gold:#c9a84c;--gold2:#e0bb5a;--muted:rgba(255,255,255,.35);--dim:rgba(255,255,255,.07);--red:#e74c3c;--green:#2ecc71;}
@@ -166,8 +173,24 @@ function showToast(msg,type='success'){
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.className=''; },2200);
 }
 
-let invNum=100, days=[];
-try{ const s=localStorage.getItem('lg-num'); invNum=s?parseInt(s)+1:Math.floor(Math.random()*900)+100; }catch(e){}
+let invNum = null; // se asigna al cargar
+let days = [];
+
+async function loadInvNum() {
+  // 1. intentar storage persistente
+  try {
+    const r = await window.storage.get('lg-inv-num');
+    invNum = r ? parseInt(r.value) + 1 : 1001;
+  } catch(e) {
+    // 2. fallback a localStorage
+    try {
+      const s = localStorage.getItem('lg-num');
+      invNum = s ? parseInt(s) + 1 : 1001;
+    } catch(e2) {
+      invNum = 1001;
+    }
+  }
+}
 
 // ── Leer cantidad de forma segura (nunca fuerza a 1 mientras se escribe) ──
 const getQty = el => { const v=parseInt(el.value); return (isNaN(v)||v<1)?1:v; };
@@ -177,13 +200,17 @@ const updateGrand = () => { $('grand-total').textContent=fmt(days.reduce((s,d)=>
 
 let saveTimer;
 function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(doSave,700); }
-function doSave(){
+async function doSave(){
   try{
     const data={ num:val('fn'),ref:val('fr'),date:val('fd'),due:val('fdu'),
       name:val('fnm'),phone:val('fph'),email:val('fem'),a1:val('fa1'),a2:val('fa2'),note:val('fnt'),
       days:days.map(d=>({ date:d.dateEl.value, items:d.items.map(it=>({ desc:it.descEl.value,price:it.priceEl.value,qty:it.qtyEl.value })) })) };
-    localStorage.setItem('lg-draft',JSON.stringify(data));
-    localStorage.setItem('lg-num',String(invNum));
+    // guardar borrador
+    try { await window.storage.set('lg-draft', JSON.stringify(data)); } catch(e) {}
+    localStorage.setItem('lg-draft', JSON.stringify(data));
+    // guardar número de factura
+    try { await window.storage.set('lg-inv-num', String(invNum)); } catch(e) {}
+    localStorage.setItem('lg-num', String(invNum));
     showToast('✓ Borrador guardado');
   }catch(e){ showToast('⚠ No se pudo guardar','error'); }
 }
@@ -447,10 +474,16 @@ async function openPreview(){ if(!validate())return; try{ showToast('⏳ Cargand
 
 function resetForm(){ days=[]; $('days-list').innerHTML=''; $('grand-total').textContent='COL$0'; try{invNum=parseInt(localStorage.getItem('lg-num')||'99')+1;}catch(e){} $('fn').value=pad(invNum); $('fr').value=genRef(); const t=new Date(),due=new Date(t); due.setDate(due.getDate()+7); $('fd').value=iso(t); $('fdu').value=iso(due); ['fnm','fph','fem','fa1','fa2','fnt'].forEach(id=>$(id).value=''); addDay(); }
 
-function init(){
+async function init(){
+  await loadInvNum();
   $('fn').value=pad(invNum); $('fr').value=genRef();
   const t=new Date(),due=new Date(t); due.setDate(due.getDate()+7); $('fd').value=iso(t); $('fdu').value=iso(due);
-  let saved=null; try{saved=JSON.parse(localStorage.getItem('lg-draft'));}catch(e){}
+
+  // cargar borrador: primero storage persistente, luego localStorage
+  let saved=null;
+  try { const r = await window.storage.get('lg-draft'); if(r) saved=JSON.parse(r.value); } catch(e) {}
+  if(!saved) try { saved=JSON.parse(localStorage.getItem('lg-draft')); } catch(e) {}
+
   if(saved&&saved.days&&saved.days.length){
     if(saved.num)$('fn').value=saved.num; if(saved.ref)$('fr').value=saved.ref;
     if(saved.date)$('fd').value=saved.date; if(saved.due)$('fdu').value=saved.due;
@@ -460,7 +493,7 @@ function init(){
     saved.days.forEach(d=>addDay(d.date||'',d.items||[]));
   } else { addDay(); }
   ['fnm','fph','fem','fa1','fa2','fd','fdu','fnt'].forEach(id=>{ const el=$(id); if(el)el.addEventListener('input',scheduleSave); });
-  $('btn-reset').addEventListener('click',()=>{ if(!confirm('¿Crear nueva factura? Se perderá el borrador.'))return; try{localStorage.removeItem('lg-draft');}catch(e){} resetForm(); showToast('✓ Nueva factura creada'); });
+  $('btn-reset').addEventListener('click',()=>{ if(!confirm('¿Crear nueva factura? Se perderá el borrador.'))return; try{localStorage.removeItem('lg-draft');}catch(e){} try{window.storage.delete('lg-draft');}catch(e){} resetForm(); showToast('✓ Nueva factura creada'); });
   $('btn-add-day').addEventListener('click',()=>{ addDay(); scheduleSave(); });
   $('btn-prev').addEventListener('click',openPreview);
   $('btn-dl').addEventListener('click',downloadPDF);
