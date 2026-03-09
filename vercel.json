@@ -1,17 +1,25 @@
 {
   "version": 2,
   "builds": [{ "src": "index.html", "use": "@vercel/static" }],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
-      ]
-    }
-  ]
+  "routes": [{ "src": "/(.*)", "dest": "/$1" }],
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Cache-Control", "value": "public, max-age=3600" }
+    ]
+  }]
 }
+```
+
+---
+
+**Estructura final:**
+```
+gordelios-food/
+├── index.html
+├── manifest.json
+├── icon-192.png
+├── icon-512.png
+├── vercel.json
+└── .gitignore
